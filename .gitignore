@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Virtual environment
+venv/
+oranta_env/
+
+# Media / static files
+media/
+staticfiles/
+
+# IDE files
+.vscode/
+.idea/
+
+# System files
+.DS_Store
