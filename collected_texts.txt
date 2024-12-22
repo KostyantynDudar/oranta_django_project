@@ -64,12 +64,66 @@ if __name__ == "__main__":
 
 
 --- FILE: /home/oranta_django_project/oranta_project/templates/base.html ---
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Oranta{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Навигационная панель -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">Oranta</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">Главная</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'contacts' %}">Контакты</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'articles' %}">Статьи</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Контент -->
+    <div class="container mt-5">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/views.py ---
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from apps.main.models import Article
 
-# Create your views here.
+def home_view(request):
+    return render(request, "main/home.html")
+
+def contact_view(request):
+    return render(request, "main/contacts.html")
+
+def article_list_view(request):
+    articles = Article.objects.all().order_by("-created_at")
+    return render(request, "main/articles.html", {"articles": articles})
+
+def article_detail_view(request, id):
+    article = get_object_or_404(Article, id=id)
+    return render(request, "main/article_detail.html", {"article": article})
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/admin.py ---
@@ -91,14 +145,146 @@ class MainConfig(AppConfig):
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/tests.py ---
 from django.test import TestCase
+from django.urls import reverse
 
-# Create your tests here.
+class MainPagesTests(TestCase):
+
+    def test_home_page_status_code(self):
+        """Главная страница возвращает код 200"""
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_contacts_page_status_code(self):
+        """Страница контактов возвращает код 200"""
+        response = self.client.get(reverse('contacts'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_articles_page_status_code(self):
+        """Страница статей возвращает код 200"""
+        response = self.client.get(reverse('articles'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_home_page_content(self):
+        """Проверяем контент главной страницы"""
+        response = self.client.get(reverse('home'))
+        self.assertContains(response, 'Оформить заявку')
+
+    def test_contacts_page_content(self):
+        """Проверяем контент страницы контактов"""
+        response = self.client.get(reverse('contacts'))
+        self.assertContains(response, 'Контакты')
+
+    def test_articles_page_content(self):
+        """Проверяем контент страницы статей"""
+        response = self.client.get(reverse('articles'))
+        self.assertContains(response, 'Статьи')
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/models.py ---
 from django.db import models
 
-# Create your models here.
+class Article(models.Model):
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+--- FILE: /home/oranta_django_project/oranta_project/apps/main/templates/main/article_detail.html ---
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/articles.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1>{{ article.title }}</h1>
+<p>{{ article.content }}</p>
+<p><a href="{% url 'articles' %}">Назад к списку</a></p>
+{% endblock %}
+
+
+--- FILE: /home/oranta_django_project/oranta_project/apps/main/templates/main/home.html ---
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Главная{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">Оформить заявку</h1>
+<form method="post" action="/submit-form/">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="name" class="form-label">Ваше имя</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label for="email" class="form-label">Электронная почта</label>
+        <input type="email" class="form-control" id="email" name="email" required>
+    </div>
+    <div class="mb-3">
+        <label for="message" class="form-label">Сообщение</label>
+        <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Отправить заявку</button>
+</form>
+{% endblock %}
+
+
+--- FILE: /home/oranta_django_project/oranta_project/apps/main/templates/main/articles.html ---
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Статьи{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/articles.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">Статьи</h1>
+<div class="list-group">
+    <a href="#" class="list-group-item list-group-item-action">
+        <h5 class="mb-1">Статья 1</h5>
+        <p class="mb-1">Краткое описание статьи 1...</p>
+    </a>
+    <a href="#" class="list-group-item list-group-item-action">
+        <h5 class="mb-1">Статья 2</h5>
+        <p class="mb-1">Краткое описание статьи 2...</p>
+    </a>
+</div>
+{% endblock %}
+
+
+--- FILE: /home/oranta_django_project/oranta_project/apps/main/templates/main/contacts.html ---
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Контакты{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/contacts.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">Контакты</h1>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Кагарлык, ул. Центральная, 123</h5>
+        <p class="card-text">Телефон: <a href="tel:+380671234567">+380 67 123 45 67</a></p>
+        <p class="card-text">Электронная почта: <a href="mailto:info@oranta.in.ua">info@oranta.in.ua</a></p>
+    </div>
+</div>
+{% endblock %}
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/insurance/views.py ---
@@ -174,27 +360,16 @@ from django.db import models
 
 
 --- FILE: /home/oranta_django_project/oranta_project/oranta_project/urls.py ---
-"""
-URL configuration for oranta_project project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path
+from apps.main.views import home_view, contact_view, article_list_view, article_detail_view
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+    path("", home_view, name="home"),  # Главная страница
+    path("contacts/", contact_view, name="contacts"),  # Контакты
+    path("articles/", article_list_view, name="articles"),  # Список статей
+    path("articles/<int:id>/", article_detail_view, name="article_detail"),  # Детальная статья
 ]
 
 

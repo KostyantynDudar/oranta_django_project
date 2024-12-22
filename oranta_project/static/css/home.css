@@ -1,0 +1,7 @@
+/* Файл: home.css */
+/* Расположение: /home/oranta_django_project/static/css/home.css */
+
+h1 {
+    color: var(--primary-color);
+    text-align: center;
+}

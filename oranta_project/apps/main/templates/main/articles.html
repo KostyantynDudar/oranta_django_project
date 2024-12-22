@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Статьи{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/articles.css' %}">
+{% endblock %}
 
 {% block content %}
 <h1 class="text-center mb-4">Статьи</h1>

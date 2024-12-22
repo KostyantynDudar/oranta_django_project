@@ -1,0 +1,15 @@
+/* Файл: contacts.css */
+/* Расположение: /home/oranta_django_project/static/css/contacts.css */
+
+.card-title {
+    color: var(--primary-color);
+}
+
+.card-text a {
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+.card-text a:hover {
+    text-decoration: underline;
+}
