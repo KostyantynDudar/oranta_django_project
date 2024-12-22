@@ -1,11 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ article.title }}</title>
-</head>
-<body>
-    <h1>{{ article.title }}</h1>
-    <p>{{ article.content }}</p>
-    <p><a href="{% url 'articles' %}">Назад к списку</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/articles.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1>{{ article.title }}</h1>
+<p>{{ article.content }}</p>
+<p><a href="{% url 'articles' %}">Назад к списку</a></p>
+{% endblock %}

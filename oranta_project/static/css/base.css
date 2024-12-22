@@ -1,0 +1,43 @@
+/* Файл: base.css */
+/* Расположение: /home/oranta_django_project/static/css/base.css */
+
+/* Основные цвета */
+:root {
+    --primary-color: #0056b3; /* Синий */
+    --secondary-color: #ff8300; /* Оранжевый */
+    --background-color: #f7f7f7; /* Светлый фон */
+}
+
+/* Фон для всего сайта */
+body {
+    background-color: var(--background-color);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Логотип */
+.navbar-brand {
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* Стили для навигационной панели */
+.navbar {
+    background-color: var(--primary-color); /* Темно-синий фон */
+    color: var(--secondary-color); /* Белый текст */
+}
+
+/* Цвет ссылок в меню */
+.navbar .nav-link {
+    color: var(--secondary-color) !important; /* Белый текст */
+    font-weight: bold;
+    opacity: 1;
+}
+
+/* Цвет ссылок при наведении */
+.navbar .nav-link:hover {
+    color: var(--accent-color) !important; /* Оранжевый текст при наведении */
+    text-decoration: underline;
+}

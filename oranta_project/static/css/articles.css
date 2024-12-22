@@ -1,0 +1,6 @@
+/* Файл: articles.css */
+/* Расположение: /home/oranta_django_project/static/css/articles.css */
+
+.list-group-item {
+    border-left: 5px solid var(--secondary-color);
+}
