@@ -7,10 +7,24 @@ def home_view(request):
 def contact_view(request):
     return render(request, "main/contacts.html")
 
-def article_list_view(request):
-    articles = Article.objects.all().order_by("-created_at")
-    return render(request, "main/articles.html", {"articles": articles})
+def submit_insurance_form(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        insurance_type = request.POST.get('insurance_type')
+        message = request.POST.get('message')
+        documents = request.FILES.getlist('documents')
 
-def article_detail_view(request, id):
-    article = get_object_or_404(Article, id=id)
-    return render(request, "main/article_detail.html", {"article": article})
+        # Логика сохранения данных
+        # Отправка уведомления на почту
+        send_mail(
+            f'Нова заявка на страхування: {insurance_type}',
+            f'Ім’я: {name}\nЕлектронна пошта: {email}\nТелефон: {phone}\nТип страхування: {insurance_type}\nПовідомлення: {message}',
+            settings.DEFAULT_FROM_EMAIL,
+            [settings.DEFAULT_FROM_EMAIL],
+        )
+
+        return HttpResponse('Дякуємо за вашу заявку! Ми зв’яжемося з вами найближчим часом.')
+
+    return redirect('home')

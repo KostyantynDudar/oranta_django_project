@@ -4,4 +4,25 @@
 h1 {
     color: var(--primary-color);
     text-align: center;
+    font-weight: bold;
+}
+
+form {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+button[type="submit"] {
+    background-color: var(--primary-color);
+    border: none;
+    color: var(--secondary-color);
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+button[type="submit"]:hover {
+    background-color: var(--accent-color);
 }

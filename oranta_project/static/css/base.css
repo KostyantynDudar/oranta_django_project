@@ -3,8 +3,9 @@
 
 /* Основные цвета */
 :root {
-    --primary-color: #0056b3; /* Синий */
-    --secondary-color: #ff8300; /* Оранжевый */
+    --primary-color: #163a86; /* Синий */
+    --secondary-color: #ffffff; /* Белый */
+    --accent-color: #ff8300; /* Оранжевый */
     --background-color: #f7f7f7; /* Светлый фон */
 }
 
@@ -18,15 +19,16 @@ body {
 
 /* Логотип */
 .navbar-brand {
-    color: var(--primary-color);
+    color: var(--secondary-color);
     font-weight: bold;
     font-size: 1.5rem;
+    text-transform: uppercase;
 }
 
 /* Стили для навигационной панели */
 .navbar {
-    background-color: var(--primary-color); /* Темно-синий фон */
-    color: var(--secondary-color); /* Белый текст */
+    background-color: var(--primary-color) !important; /* Синий фон */
+    color: var(--secondary-color) !important; /* Белый текст */
 }
 
 /* Цвет ссылок в меню */
@@ -41,3 +43,35 @@ body {
     color: var(--accent-color) !important; /* Оранжевый текст при наведении */
     text-decoration: underline;
 }
+
+/* Футер */
+.footer {
+    background-color: var(--primary-color) !important; /* Темно-синий фон */
+    color: var(--secondary-color) !important; /* Белый текст */
+    padding: 15px 0;
+    font-size: 0.9rem;
+}
+
+.footer a {
+    color: var(--secondary-color); /* Белые ссылки */
+    text-decoration: none;
+}
+
+.footer a:hover {
+    color: var(--accent-color); /* Оранжевые ссылки при наведении */
+    text-decoration: underline;
+}
+
+/* Изменение цвета кнопки */
+.btn-primary {
+    background-color: var(--primary-color); /* Основной синий цвет */
+    border-color: var(--primary-color); /* Цвет границы */
+    color: var(--secondary-color); /* Белый текст */
+}
+
+/* Изменение цвета при наведении */
+.btn-primary:hover {
+    background-color: var(--accent-color); /* Оранжевый при наведении */
+    border-color: var(--accent-color); /* Граница оранжевого цвета */
+}
+

@@ -67,41 +67,57 @@ if __name__ == "__main__":
 <!DOCTYPE html>
 <html lang="uk">
 <head>
+    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Oranta{% endblock %}</title>
+
+    <!-- Підключення Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Підключення кастомного CSS -->
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
 <body>
-    <!-- Навигационная панель -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <!-- Навігаційна панель -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">Oranta</a>
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <img src="{% static 'media/logo.jpg' %}" alt="Oranta Logo" height="40">
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">Главная</a>
+                        <a class="nav-link" href="{% url 'home' %}">Головна</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'contacts' %}">Контакты</a>
+                        <a class="nav-link" href="{% url 'contacts' %}">Контакти</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'articles' %}">Статьи</a>
+                        <a class="nav-link" href="{% url 'news_list' %}">Новини</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Контент -->
-    <div class="container mt-5">
+    <!-- Основний контент -->
+    <div class="container mt-4">
         {% block content %}
         {% endblock %}
     </div>
 
+    <!-- Футер -->
+    <footer class="footer mt-5 bg-primary text-white text-center py-3">
+        <p>&copy; 2024 Oranta. Всі права захищено.</p>
+        <p>Телефон: <a href="tel:+380986778761" class="text-white">+380 98 677 87 61</a></p>
+        <p>Електронна пошта: <a href="mailto:info@oranta.in.ua" class="text-white">info@oranta.in.ua</a></p>
+    </footer>
+
+    <!-- Підключення Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
@@ -117,14 +133,27 @@ def home_view(request):
 def contact_view(request):
     return render(request, "main/contacts.html")
 
-def article_list_view(request):
-    articles = Article.objects.all().order_by("-created_at")
-    return render(request, "main/articles.html", {"articles": articles})
+def submit_insurance_form(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        insurance_type = request.POST.get('insurance_type')
+        message = request.POST.get('message')
+        documents = request.FILES.getlist('documents')
 
-def article_detail_view(request, id):
-    article = get_object_or_404(Article, id=id)
-    return render(request, "main/article_detail.html", {"article": article})
+        # Логика сохранения данных
+        # Отправка уведомления на почту
+        send_mail(
+            f'Нова заявка на страхування: {insurance_type}',
+            f'Ім’я: {name}\nЕлектронна пошта: {email}\nТелефон: {phone}\nТип страхування: {insurance_type}\nПовідомлення: {message}',
+            settings.DEFAULT_FROM_EMAIL,
+            [settings.DEFAULT_FROM_EMAIL],
+        )
 
+        return HttpResponse('Дякуємо за вашу заявку! Ми зв’яжемося з вами найближчим часом.')
+
+    return redirect('home')
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/admin.py ---
 from django.contrib import admin
@@ -213,30 +242,58 @@ class Article(models.Model):
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Главная{% endblock %}
+{% block title %}Головна{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/home.css' %}">
 {% endblock %}
 
 {% block content %}
-<h1 class="text-center mb-4">Оформить заявку</h1>
-<form method="post" action="/submit-form/">
-    {% csrf_token %}
-    <div class="mb-3">
-        <label for="name" class="form-label">Ваше имя</label>
-        <input type="text" class="form-control" id="name" name="name" required>
-    </div>
-    <div class="mb-3">
-        <label for="email" class="form-label">Электронная почта</label>
-        <input type="email" class="form-control" id="email" name="email" required>
-    </div>
-    <div class="mb-3">
-        <label for="message" class="form-label">Сообщение</label>
-        <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
-    </div>
-    <button type="submit" class="btn btn-primary">Отправить заявку</button>
-</form>
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Оформити заявку на страхування</h1>
+    
+    <form method="post" action="{% url 'submit_insurance_form' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="name" class="form-label">Ваше ім’я:</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        
+        <div class="mb-3">
+            <label for="email" class="form-label">Електронна пошта:</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+        </div>
+        
+        <div class="mb-3">
+            <label for="phone" class="form-label">Телефон:</label>
+            <input type="tel" class="form-control" id="phone" name="phone" pattern="\+380\d{9}" placeholder="+380XXXXXXXXX" required>
+        </div>
+        
+        <div class="mb-3">
+            <label for="insurance_type" class="form-label">Тип страхування:</label>
+            <select class="form-select" id="insurance_type" name="insurance_type" required>
+                <option value="" disabled selected>Оберіть тип страхування</option>
+                <option value="КАСКО">КАСКО</option>
+                <option value="Автоцивілка">Автоцивілка</option>
+                <option value="Зелена карта">Зелена карта</option>
+                <option value="Страхування подорожей">Страхування подорожей</option>
+                <option value="Страхування майна">Страхування майна</option>
+            </select>
+        </div>
+        
+        <div class="mb-3">
+            <label for="message" class="form-label">Додаткова інформація:</label>
+            <textarea class="form-control" id="message" name="message" rows="4"></textarea>
+        </div>
+        
+        <div class="mb-3">
+            <label for="documents" class="form-label">Додати документи (за потребою):</label>
+            <input type="file" class="form-control" id="documents" name="documents" multiple>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100">Відправити заявку</button>
+    </form>
+</div>
 {% endblock %}
 
 
@@ -269,21 +326,33 @@ class Article(models.Model):
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Контакты{% endblock %}
+{% block title %}Контакти{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/contacts.css' %}">
 {% endblock %}
 
 {% block content %}
-<h1 class="text-center mb-4">Контакты</h1>
-<div class="card">
+<h1 class="text-center mb-4">Контакти</h1>
+
+<div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title">Кагарлык, ул. Центральная, 123</h5>
-        <p class="card-text">Телефон: <a href="tel:+380671234567">+380 67 123 45 67</a></p>
-        <p class="card-text">Электронная почта: <a href="mailto:info@oranta.in.ua">info@oranta.in.ua</a></p>
+        <h5 class="card-title">Наша нова адреса:</h5>
+        <p class="card-text"><strong>Кагарлик, вул. Незалежності, 24</strong></p>
+        <h5 class="card-title mt-4">Контактні дані:</h5>
+        <p class="card-text">Телефон, Viber, Telegram: <a href="tel:+380986778761">+380 98 677 87 61</a> (Роман Станіславович)</p>
+        <p class="card-text">Електронна пошта: <a href="mailto:info@oranta.in.ua">info@oranta.in.ua</a></p>
     </div>
 </div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Графік роботи:</h5>
+        <p class="card-text">Понеділок – п’ятниця: <strong>9:00 – 16:45</strong></p>
+        <p class="card-text">Вихідні: <strong>9:00 – 11:45</strong></p>
+    </div>
+</div>
+
 {% endblock %}
 
 
@@ -359,17 +428,149 @@ from django.db import models
 # Create your models here.
 
 
+--- FILE: /home/oranta_django_project/oranta_project/news/views.py ---
+from django.shortcuts import render, get_object_or_404
+from .models import News
+
+def news_list(request):
+    articles = News.objects.all()
+    return render(request, 'news/news_list.html', {'articles': articles})
+
+def news_detail(request, id):
+    article = get_object_or_404(News, id=id)
+    return render(request, 'news/news_detail.html', {'article': article})
+
+
+--- FILE: /home/oranta_django_project/oranta_project/news/admin.py ---
+
+from django.contrib import admin
+from .models import News
+
+@admin.register(News)
+class NewsAdmin(admin.ModelAdmin):
+    list_display = ('title', 'created_at')
+    search_fields = ('title', 'content')
+
+
+--- FILE: /home/oranta_django_project/oranta_project/news/apps.py ---
+from django.apps import AppConfig
+
+
+class NewsConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'news'
+
+
+--- FILE: /home/oranta_django_project/oranta_project/news/urls.py ---
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.news_list, name='news_list'),
+    path('<int:id>/', views.news_detail, name='news_detail'),
+]
+
+
+--- FILE: /home/oranta_django_project/oranta_project/news/__init__.py ---
+
+
+--- FILE: /home/oranta_django_project/oranta_project/news/tests.py ---
+from django.test import TestCase
+
+# Create your tests here.
+
+
+--- FILE: /home/oranta_django_project/oranta_project/news/models.py ---
+from django.db import models
+
+class News(models.Model):
+    title = models.CharField(max_length=200, verbose_name="Заголовок")
+    content = models.TextField(verbose_name="Контент")
+    image = models.ImageField(upload_to="news_images/", null=True, blank=True, verbose_name="Изображение")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+
+    class Meta:
+        verbose_name = "Новина"
+        verbose_name_plural = "Новини"
+
+    def __str__(self):
+        return self.title
+
+
+--- FILE: /home/oranta_django_project/oranta_project/news/templates/news/news_list.html ---
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Новини{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/news.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">Новини</h1>
+
+<div class="list-group">
+    {% for article in articles %}
+    <a href="{% url 'news_detail' article.id %}" class="list-group-item list-group-item-action">
+        <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">{{ article.title }}</h5>
+            <small>{{ article.created_at|date:"d.m.Y" }}</small>
+        </div>
+        {% if article.summary %}
+        <p class="mb-1">{{ article.summary }}</p>
+        {% endif %}
+    </a>
+    {% empty %}
+    <p>Новин поки що немає.</p>
+    {% endfor %}
+</div>
+{% endblock %}
+
+
+--- FILE: /home/oranta_django_project/oranta_project/news/templates/news/news_detail.html ---
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/news.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="news-detail">
+    <h1 class="text-center mb-4">{{ article.title }}</h1>
+    
+    {% if article.image %}
+    <div class="text-center mb-4">
+        <img src="{{ article.image.url }}" alt="{{ article.title }}" class="img-fluid">
+    </div>
+    {% endif %}
+
+    <p class="text-muted">{{ article.created_at|date:"d.m.Y H:i" }}</p>
+    <div class="content">
+        {{ article.content|safe }}
+    </div>
+
+    <a href="{% url 'news_list' %}" class="btn btn-primary mt-4">Повернутися до новин</a>
+</div>
+{% endblock %}
+ 
+
 --- FILE: /home/oranta_django_project/oranta_project/oranta_project/urls.py ---
 from django.contrib import admin
-from django.urls import path
-from apps.main.views import home_view, contact_view, article_list_view, article_detail_view
+from django.urls import path, include
+from apps.main.views import home_view, contact_view
+from apps.main.views import submit_insurance_form
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home_view, name="home"),  # Главная страница
     path("contacts/", contact_view, name="contacts"),  # Контакты
-    path("articles/", article_list_view, name="articles"),  # Список статей
-    path("articles/<int:id>/", article_detail_view, name="article_detail"),  # Детальная статья
+    path('news/', include('news.urls')),  # Новости
+    path('submit-form/', views.submit_insurance_form, name='submit_insurance_form'),
 ]
 
 
@@ -440,6 +641,7 @@ INSTALLED_APPS = [
     'apps.main',
     'apps.insurance',
     'apps.contacts',
+    'news',
 ]
 
 
