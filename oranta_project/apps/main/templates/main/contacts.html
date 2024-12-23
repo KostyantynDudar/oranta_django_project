@@ -1,19 +1,31 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Контакты{% endblock %}
+{% block title %}Контакти{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/contacts.css' %}">
 {% endblock %}
 
 {% block content %}
-<h1 class="text-center mb-4">Контакты</h1>
-<div class="card">
+<h1 class="text-center mb-4">Контакти</h1>
+
+<div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title">Кагарлык, ул. Центральная, 123</h5>
-        <p class="card-text">Телефон: <a href="tel:+380671234567">+380 67 123 45 67</a></p>
-        <p class="card-text">Электронная почта: <a href="mailto:info@oranta.in.ua">info@oranta.in.ua</a></p>
+        <h5 class="card-title">Наша нова адреса:</h5>
+        <p class="card-text"><strong>Кагарлик, вул. Незалежності, 24</strong></p>
+        <h5 class="card-title mt-4">Контактні дані:</h5>
+        <p class="card-text">Телефон, Viber, Telegram: <a href="tel:+380986778761">+380 98 677 87 61</a> (Роман Станіславович)</p>
+        <p class="card-text">Електронна пошта: <a href="mailto:info@oranta.in.ua">info@oranta.in.ua</a></p>
     </div>
 </div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Графік роботи:</h5>
+        <p class="card-text">Понеділок – п’ятниця: <strong>9:00 – 16:45</strong></p>
+        <p class="card-text">Вихідні: <strong>9:00 – 11:45</strong></p>
+    </div>
+</div>
+
 {% endblock %}

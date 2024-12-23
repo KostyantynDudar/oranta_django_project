@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/news.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="news-detail">
+    <h1 class="text-center mb-4">{{ article.title }}</h1>
+    
+    {% if article.image %}
+    <div class="text-center mb-4">
+        <img src="{{ article.image.url }}" alt="{{ article.title }}" class="img-fluid">
+    </div>
+    {% endif %}
+
+    <p class="text-muted">{{ article.created_at|date:"d.m.Y H:i" }}</p>
+    <div class="content">
+        {{ article.content|safe }}
+    </div>
+
+    <a href="{% url 'news_list' %}" class="btn btn-primary mt-4">Повернутися до новин</a>
+</div>
+{% endblock %}
+ 
