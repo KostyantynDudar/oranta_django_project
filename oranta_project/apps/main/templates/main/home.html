@@ -13,44 +13,44 @@
     
     <form method="post" action="{% url 'submit_insurance_form' %}" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="mb-3">
-            <label for="name" class="form-label">Ваше ім’я:</label>
-            <input type="text" class="form-control" id="name" name="name" required>
-        </div>
-        
-        <div class="mb-3">
-            <label for="email" class="form-label">Електронна пошта:</label>
-            <input type="email" class="form-control" id="email" name="email" required>
-        </div>
         
         <div class="mb-3">
             <label for="phone" class="form-label">Телефон:</label>
             <input type="tel" class="form-control" id="phone" name="phone" pattern="\+380\d{9}" placeholder="+380XXXXXXXXX" required>
         </div>
-        
+
         <div class="mb-3">
-            <label for="insurance_type" class="form-label">Тип страхування:</label>
-            <select class="form-select" id="insurance_type" name="insurance_type" required>
-                <option value="" disabled selected>Оберіть тип страхування</option>
-                <option value="КАСКО">КАСКО</option>
-                <option value="Автоцивілка">Автоцивілка</option>
-                <option value="Зелена карта">Зелена карта</option>
-                <option value="Страхування подорожей">Страхування подорожей</option>
-                <option value="Страхування майна">Страхування майна</option>
+            <label for="tax_code" class="form-label">Ідентифікаційний код:</label>
+            <input type="text" class="form-control" id="tax_code" name="tax_code" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="tech_passport" class="form-label">Техпаспорт (завантажте файл):</label>
+            <input type="file" class="form-control" id="tech_passport" name="tech_passport" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="personal_docs" class="form-label">Особисті документи (завантажте файл):</label>
+            <input type="file" class="form-control" id="personal_docs" name="personal_docs" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="registration_address" class="form-label">Адреса реєстрації:</label>
+            <textarea class="form-control" id="registration_address" name="registration_address" rows="3" required></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="deductible" class="form-label">Вибір франшизи:</label>
+            <select class="form-select" id="deductible" name="deductible" required>
+                <option value="" disabled selected>Оберіть франшизу</option>
+                <option value="0">0 грн</option>
+                <option value="1500">1500 грн</option>
+                <option value="2500">2500 грн</option>
             </select>
-        </div>
-        
-        <div class="mb-3">
-            <label for="message" class="form-label">Додаткова інформація:</label>
-            <textarea class="form-control" id="message" name="message" rows="4"></textarea>
-        </div>
-        
-        <div class="mb-3">
-            <label for="documents" class="form-label">Додати документи (за потребою):</label>
-            <input type="file" class="form-control" id="documents" name="documents" multiple>
         </div>
         
         <button type="submit" class="btn btn-primary w-100">Відправити заявку</button>
     </form>
 </div>
 {% endblock %}
+
