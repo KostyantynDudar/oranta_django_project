@@ -106,6 +106,17 @@ if __name__ == "__main__":
 
     <!-- Основний контент -->
     <div class="container mt-4">
+        {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         {% block content %}
         {% endblock %}
     </div>
@@ -124,8 +135,13 @@ if __name__ == "__main__":
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/views.py ---
-from django.shortcuts import render, get_object_or_404
-from apps.main.models import Article
+from django.shortcuts import render, redirect, get_object_or_404
+from django.core.mail import send_mail
+from django.contrib import messages
+from .models import Article, InsuranceApplication
+from .telegram_bot import send_to_telegram  # Импорт функции для отправки в Telegram
+
+# Файл: /home/oranta_django_project/oranta_project/apps/main/views.py
 
 def home_view(request):
     return render(request, "main/home.html")
@@ -135,30 +151,73 @@ def contact_view(request):
 
 def submit_insurance_form(request):
     if request.method == 'POST':
-        name = request.POST.get('name')
-        email = request.POST.get('email')
-        phone = request.POST.get('phone')
-        insurance_type = request.POST.get('insurance_type')
-        message = request.POST.get('message')
-        documents = request.FILES.getlist('documents')
+        try:
+            # Извлечение данных из формы
+            phone_number = request.POST.get('phone')
+            tax_code = request.POST.get('tax_code')
+            registration_address = request.POST.get('registration_address')
+            deductible = request.POST.get('deductible')
+            tech_passport = request.FILES.get('tech_passport')
+            personal_docs = request.FILES.get('personal_docs')
 
-        # Логика сохранения данных
-        # Отправка уведомления на почту
-        send_mail(
-            f'Нова заявка на страхування: {insurance_type}',
-            f'Ім’я: {name}\nЕлектронна пошта: {email}\nТелефон: {phone}\nТип страхування: {insurance_type}\nПовідомлення: {message}',
-            settings.DEFAULT_FROM_EMAIL,
-            [settings.DEFAULT_FROM_EMAIL],
-        )
+            # Создание новой записи в базе данных
+            application = InsuranceApplication(
+                phone_number=phone_number,
+                tax_code=tax_code,
+                registration_address=registration_address,
+                deductible=deductible,
+                tech_passport=tech_passport,
+                personal_docs=personal_docs,
+            )
+            application.save()
 
-        return HttpResponse('Дякуємо за вашу заявку! Ми зв’яжемося з вами найближчим часом.')
+            # Формирование сообщения для Telegram
+            message = (
+                f"<b>Новая заявка</b>\n\n"
+                f"<b>Код:</b> {application.unique_code}\n"
+                f"<b>Телефон:</b> {application.phone_number}\n"
+                f"<b>Адрес:</b> {application.registration_address}\n"
+                f"<b>Франшиза:</b> {application.deductible}"
+            )
 
-    return redirect('home')
+            # Отправка в Telegram
+            send_to_telegram(message)
+
+            # Добавляем сообщение об успешной отправке
+            messages.success(request, "Ваша заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.")
+
+            # Перенаправление после успешного сохранения
+            return redirect('home')
+
+        except Exception as e:
+            # Обработка ошибок
+            messages.error(request, f"Ошибка при обработке заявки: {e}")
+            return render(request, 'main/home.html')
+
+    return render(request, 'main/home.html')
+
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/admin.py ---
+from django.utils.html import format_html
 from django.contrib import admin
+from .models import InsuranceApplication
 
-# Register your models here.
+@admin.register(InsuranceApplication)
+class InsuranceApplicationAdmin(admin.ModelAdmin):
+    list_display = ('unique_code', 'phone_number', 'created_at', 'download_tech_passport', 'download_personal_docs')
+    search_fields = ('unique_code', 'phone_number', 'tax_code', 'registration_address')
+
+    def download_tech_passport(self, obj):
+        if obj.tech_passport:
+            return format_html('<a href="{}" download>Скачать</a>', obj.tech_passport.url)
+        return "Нет файла"
+    download_tech_passport.short_description = "Техпаспорт"
+
+    def download_personal_docs(self, obj):
+        if obj.personal_docs:
+            return format_html('<a href="{}" download>Скачать</a>', obj.personal_docs.url)
+        return "Нет файла"
+    download_personal_docs.short_description = "Личные документы"
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/apps.py ---
@@ -209,8 +268,48 @@ class MainPagesTests(TestCase):
         self.assertContains(response, 'Статьи')
 
 
+--- FILE: /home/oranta_django_project/oranta_project/apps/main/telegram_bot.py ---
+import requests
+from django.conf import settings
+
+TELEGRAM_BOT_TOKEN = settings.TELEGRAM_BOT_TOKEN
+TELEGRAM_CHAT_ID = settings.TELEGRAM_CHAT_ID
+
+def send_to_telegram(message):
+    if TELEGRAM_BOT_TOKEN is None or TELEGRAM_CHAT_ID is None:
+        raise ValueError("TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID не настроены.")
+    
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    data = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML",
+    }
+    response = requests.post(url, data=data)
+    response.raise_for_status()
+    return response.status_code
+
+
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/models.py ---
+# Файл: /home/oranta_django_project/oranta_project/apps/main/models.py
+
 from django.db import models
+from django.utils.timezone import now
+from uuid import uuid4
+import os
+
+
+def rename_file(instance, filename):
+    ext = filename.split('.')[-1]
+    filename = f"{instance.unique_code}_Техпаспорт.{ext}"
+    return os.path.join('tech_passports/', filename)
+
+
+def rename_personal_docs(instance, filename):
+    ext = filename.split('.')[-1]
+    filename = f"{instance.unique_code}_Личные_документы.{ext}"
+    return os.path.join('personal_docs/', filename)
+
 
 class Article(models.Model):
     title = models.CharField(max_length=255)
@@ -219,6 +318,39 @@ class Article(models.Model):
 
     def __str__(self):
         return self.title
+
+def generate_unique_code():
+    from datetime import datetime
+    from uuid import uuid4
+    return datetime.now().strftime('%Y%m%d%H%M%S') + str(uuid4().hex)[:6]
+
+class InsuranceApplication(models.Model):
+    unique_code = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name="Уникальный код заявки",
+        default=generate_unique_code  # Указываем функцию вместо lambda
+    )
+    phone_number = models.CharField(max_length=15, verbose_name="Номер телефона")
+    tax_code = models.CharField(max_length=10, verbose_name="Налоговый код")
+    tech_passport = models.FileField(upload_to=rename_file, verbose_name="Техпаспорт")
+    personal_docs = models.FileField(upload_to=rename_personal_docs, verbose_name="Личные документы")
+    registration_address = models.TextField(verbose_name="Адрес регистрации")
+    deductible = models.CharField(
+        max_length=10,
+        choices=[
+            ('0', '0 грн'),
+            ('1500', '1500 грн'),
+            ('2500', '2500 грн')
+        ],
+        verbose_name="Франшиза"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата подачи заявки")
+
+    def save(self, *args, **kwargs):
+        if not self.unique_code:
+            self.unique_code = generate_unique_code()
+        super().save(*args, **kwargs)
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/templates/main/article_detail.html ---
@@ -254,47 +386,47 @@ class Article(models.Model):
     
     <form method="post" action="{% url 'submit_insurance_form' %}" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="mb-3">
-            <label for="name" class="form-label">Ваше ім’я:</label>
-            <input type="text" class="form-control" id="name" name="name" required>
-        </div>
-        
-        <div class="mb-3">
-            <label for="email" class="form-label">Електронна пошта:</label>
-            <input type="email" class="form-control" id="email" name="email" required>
-        </div>
         
         <div class="mb-3">
             <label for="phone" class="form-label">Телефон:</label>
             <input type="tel" class="form-control" id="phone" name="phone" pattern="\+380\d{9}" placeholder="+380XXXXXXXXX" required>
         </div>
-        
+
         <div class="mb-3">
-            <label for="insurance_type" class="form-label">Тип страхування:</label>
-            <select class="form-select" id="insurance_type" name="insurance_type" required>
-                <option value="" disabled selected>Оберіть тип страхування</option>
-                <option value="КАСКО">КАСКО</option>
-                <option value="Автоцивілка">Автоцивілка</option>
-                <option value="Зелена карта">Зелена карта</option>
-                <option value="Страхування подорожей">Страхування подорожей</option>
-                <option value="Страхування майна">Страхування майна</option>
+            <label for="tax_code" class="form-label">Ідентифікаційний код:</label>
+            <input type="text" class="form-control" id="tax_code" name="tax_code" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="tech_passport" class="form-label">Техпаспорт (завантажте файл):</label>
+            <input type="file" class="form-control" id="tech_passport" name="tech_passport" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="personal_docs" class="form-label">Особисті документи (завантажте файл):</label>
+            <input type="file" class="form-control" id="personal_docs" name="personal_docs" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="registration_address" class="form-label">Адреса реєстрації:</label>
+            <textarea class="form-control" id="registration_address" name="registration_address" rows="3" required></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="deductible" class="form-label">Вибір франшизи:</label>
+            <select class="form-select" id="deductible" name="deductible" required>
+                <option value="" disabled selected>Оберіть франшизу</option>
+                <option value="0">0 грн</option>
+                <option value="1500">1500 грн</option>
+                <option value="2500">2500 грн</option>
             </select>
-        </div>
-        
-        <div class="mb-3">
-            <label for="message" class="form-label">Додаткова інформація:</label>
-            <textarea class="form-control" id="message" name="message" rows="4"></textarea>
-        </div>
-        
-        <div class="mb-3">
-            <label for="documents" class="form-label">Додати документи (за потребою):</label>
-            <input type="file" class="form-control" id="documents" name="documents" multiple>
         </div>
         
         <button type="submit" class="btn btn-primary w-100">Відправити заявку</button>
     </form>
 </div>
 {% endblock %}
+
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/templates/main/articles.html ---
@@ -565,6 +697,8 @@ from apps.main.views import home_view, contact_view
 from apps.main.views import submit_insurance_form
 from apps.main import views
 
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 urlpatterns = [
@@ -575,6 +709,8 @@ urlpatterns = [
     path('submit-form/', views.submit_insurance_form, name='submit_insurance_form'),
 ]
 
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 --- FILE: /home/oranta_django_project/oranta_project/oranta_project/__init__.py ---
 
@@ -744,6 +880,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Security settings for production
 CSRF_TRUSTED_ORIGINS = ['https://oranta.in.ua', 'https://www.oranta.in.ua']
+
+
+
+import os
+
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+
+
 
 
 --- FILE: /home/oranta_django_project/oranta_project/oranta_project/wsgi.py ---

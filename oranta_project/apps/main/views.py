@@ -1,18 +1,16 @@
-from django.shortcuts import render, get_object_or_404
-from apps.main.models import Article
-
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.core.mail import send_mail
-from .models import InsuranceApplication
 from django.contrib import messages
+from .models import Article, InsuranceApplication
+from .telegram_bot import send_to_telegram  # Импорт функции для отправки в Telegram
+
+# Файл: /home/oranta_django_project/oranta_project/apps/main/views.py
 
 def home_view(request):
     return render(request, "main/home.html")
 
 def contact_view(request):
     return render(request, "main/contacts.html")
-# Файл: /home/oranta_django_project/oranta_project/apps/main/views.py
-
 
 def submit_insurance_form(request):
     if request.method == 'POST':
@@ -35,6 +33,18 @@ def submit_insurance_form(request):
                 personal_docs=personal_docs,
             )
             application.save()
+
+            # Формирование сообщения для Telegram
+            message = (
+                f"<b>Новая заявка</b>\n\n"
+                f"<b>Код:</b> {application.unique_code}\n"
+                f"<b>Телефон:</b> {application.phone_number}\n"
+                f"<b>Адрес:</b> {application.registration_address}\n"
+                f"<b>Франшиза:</b> {application.deductible}"
+            )
+
+            # Отправка в Telegram
+            send_to_telegram(message)
 
             # Добавляем сообщение об успешной отправке
             messages.success(request, "Ваша заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.")
