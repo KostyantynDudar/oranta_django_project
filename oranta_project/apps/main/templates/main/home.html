@@ -15,8 +15,8 @@
         {% csrf_token %}
         
         <div class="mb-3">
-            <label for="phone" class="form-label">Телефон:</label>
-            <input type="tel" class="form-control" id="phone" name="phone" pattern="\+380\d{9}" placeholder="+380XXXXXXXXX" required>
+            <label for="phone_number" class="form-label">Телефон:</label>
+            <input type="tel" class="form-control" id="phone_number" name="phone_number" pattern="\+380\d{9}" placeholder="+380XXXXXXXXX" required>
         </div>
 
         <div class="mb-3">
@@ -25,13 +25,13 @@
         </div>
 
         <div class="mb-3">
-            <label for="tech_passport" class="form-label">Техпаспорт (завантажте файл):</label>
-            <input type="file" class="form-control" id="tech_passport" name="tech_passport" required>
+            <label for="tech_passports" class="form-label">Техпаспорта (завантажте файли):</label>
+            <input type="file" class="form-control" id="tech_passports" name="tech_passports" multiple>
         </div>
 
         <div class="mb-3">
-            <label for="personal_docs" class="form-label">Особисті документи (завантажте файл):</label>
-            <input type="file" class="form-control" id="personal_docs" name="personal_docs" required>
+            <label for="personal_docs" class="form-label">Особисті документи (завантажте файли):</label>
+            <input type="file" class="form-control" id="personal_docs" name="personal_docs" multiple>
         </div>
 
         <div class="mb-3">
@@ -53,4 +53,3 @@
     </form>
 </div>
 {% endblock %}
-

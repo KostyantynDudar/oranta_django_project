@@ -1,15 +1,13 @@
-# Файл: /home/oranta_django_project/oranta_project/apps/main/models.py
-
 from django.db import models
-from django.utils.timezone import now
-from uuid import uuid4
 import os
-
+from uuid import uuid4
+from datetime import datetime
 
 def rename_file(instance, filename):
     ext = filename.split('.')[-1]
-    filename = f"{instance.unique_code}_Техпаспорт.{ext}"
-    return os.path.join('tech_passports/', filename)
+    identifier = instance.application.unique_code if hasattr(instance, 'application') else uuid4().hex[:6]
+    filename = f"{identifier}_{uuid4().hex[:6]}.{ext}"
+    return os.path.join('uploaded_files/', filename)
 
 
 def rename_personal_docs(instance, filename):
@@ -18,43 +16,39 @@ def rename_personal_docs(instance, filename):
     return os.path.join('personal_docs/', filename)
 
 
-class Article(models.Model):
-    title = models.CharField(max_length=255)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
+def generate_unique_code():
+    return datetime.now().strftime('%Y%m%d%H%M%S') + str(uuid4().hex[:6])
+
+class UploadedFile(models.Model):
+    application = models.ForeignKey(
+        'InsuranceApplication', 
+        on_delete=models.CASCADE, 
+        related_name="uploaded_files", 
+        null=True, 
+        blank=True, 
+        verbose_name="Заявка"
+    )
+    file = models.FileField(upload_to=rename_file, verbose_name="Файл")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title
+        return f"{self.file.name} (Заявка: {self.application.unique_code if self.application else 'Нет заявки'})"
 
-def generate_unique_code():
-    from datetime import datetime
-    from uuid import uuid4
-    return datetime.now().strftime('%Y%m%d%H%M%S') + str(uuid4().hex)[:6]
+
 
 class InsuranceApplication(models.Model):
-    unique_code = models.CharField(
-        max_length=20,
-        unique=True,
-        verbose_name="Уникальный код заявки",
-        default=generate_unique_code  # Указываем функцию вместо lambda
-    )
+    unique_code = models.CharField(max_length=20, unique=True, default=generate_unique_code, verbose_name="Уникальный код заявки")
     phone_number = models.CharField(max_length=15, verbose_name="Номер телефона")
     tax_code = models.CharField(max_length=10, verbose_name="Налоговый код")
-    tech_passport = models.FileField(upload_to=rename_file, verbose_name="Техпаспорт")
-    personal_docs = models.FileField(upload_to=rename_personal_docs, verbose_name="Личные документы")
+    tech_passports = models.ManyToManyField(UploadedFile, related_name="tech_passport_applications", verbose_name="Техпаспорта")
+    personal_docs = models.ManyToManyField(UploadedFile, related_name="personal_docs_applications", verbose_name="Личные документы")
     registration_address = models.TextField(verbose_name="Адрес регистрации")
     deductible = models.CharField(
         max_length=10,
-        choices=[
-            ('0', '0 грн'),
-            ('1500', '1500 грн'),
-            ('2500', '2500 грн')
-        ],
+        choices=[('0', '0 грн'), ('1500', '1500 грн'), ('2500', '2500 грн')],
         verbose_name="Франшиза"
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата подачи заявки")
 
-    def save(self, *args, **kwargs):
-        if not self.unique_code:
-            self.unique_code = generate_unique_code()
-        super().save(*args, **kwargs)
+    def __str__(self):
+        return f"Заявка {self.unique_code} от {self.phone_number}"

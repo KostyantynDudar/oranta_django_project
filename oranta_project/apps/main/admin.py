@@ -1,20 +1,25 @@
-from django.utils.html import format_html
 from django.contrib import admin
-from .models import InsuranceApplication
+from django.utils.html import format_html, format_html_join
+from .models import InsuranceApplication, UploadedFile
+from django.utils.safestring import mark_safe
+
 
 @admin.register(InsuranceApplication)
 class InsuranceApplicationAdmin(admin.ModelAdmin):
-    list_display = ('unique_code', 'phone_number', 'created_at', 'download_tech_passport', 'download_personal_docs')
-    search_fields = ('unique_code', 'phone_number', 'tax_code', 'registration_address')
+    list_display = ('unique_code', 'phone_number', 'created_at', 'get_files')
+    search_fields = ('unique_code', 'phone_number')
+    list_filter = ('created_at',)
 
-    def download_tech_passport(self, obj):
-        if obj.tech_passport:
-            return format_html('<a href="{}" download>Скачать</a>', obj.tech_passport.url)
-        return "Нет файла"
-    download_tech_passport.short_description = "Техпаспорт"
-
-    def download_personal_docs(self, obj):
-        if obj.personal_docs:
-            return format_html('<a href="{}" download>Скачать</a>', obj.personal_docs.url)
-        return "Нет файла"
-    download_personal_docs.short_description = "Личные документы"
+    def get_files(self, obj):
+        # Получение всех связанных файлов
+        all_files = obj.tech_passports.all() | obj.personal_docs.all()
+        
+        if all_files.exists():
+            # Формируем HTML-ссылки для скачивания
+            return format_html_join(
+                mark_safe('<br>'),  # Разделитель
+                '<a href="{}" target="_blank">Скачать {}</a>',
+                ((file.file.url, file.file.name.split('/')[-1]) for file in all_files)
+            )
+        return format_html('<span style="color: red;">Нет файлов</span>')
+    get_files.short_description = "Скачать файлы"
