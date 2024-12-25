@@ -14,10 +14,25 @@
     <form method="post" action="{% url 'submit_insurance_form' %}" enctype="multipart/form-data">
         {% csrf_token %}
         
-        <div class="mb-3">
-            <label for="phone_number" class="form-label">Телефон:</label>
-            <input type="tel" class="form-control" id="phone_number" name="phone_number" pattern="\+380\d{9}" placeholder="+380XXXXXXXXX" required>
-        </div>
+	<div class="mb-3">
+		<label for="phone_number" class="form-label">Телефон:</label>
+		<input 
+			type="tel" 
+			class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}" 
+			id="phone_number" 
+			name="phone_number" 
+			pattern="\+380\d{9}" 
+			placeholder="+380XXXXXXXXX" 
+			required
+		>
+		<div class="form-text">Введите номер в формате <b>+380XXXXXXXXX</b>.</div>
+		{% if form.phone_number.errors %}
+		<div class="invalid-feedback">
+			{{ form.phone_number.errors|striptags }}
+		</div>
+		{% endif %}
+	</div>
+
 
         <div class="mb-3">
             <label for="tax_code" class="form-label">Ідентифікаційний код:</label>
