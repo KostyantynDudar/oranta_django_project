@@ -34,10 +34,25 @@
 	</div>
 
 
-        <div class="mb-3">
-            <label for="tax_code" class="form-label">Ідентифікаційний код:</label>
-            <input type="text" class="form-control" id="tax_code" name="tax_code" required>
-        </div>
+		<div class="mb-3">
+			<label for="tax_code" class="form-label">Реєстраційний номер облікової картки платника податків:</label>
+			<input 
+				type="text" 
+				class="form-control {% if form.tax_code.errors %}is-invalid{% endif %}" 
+				id="tax_code" 
+				name="tax_code" 
+				pattern="\d{10}" 
+				placeholder="XXXXXXXXXX" 
+				required
+			>
+			<div class="form-text">Введіть ідентифікаційний номер (10 цифр).</div>
+			{% if form.tax_code.errors %}
+			<div class="invalid-feedback">
+				{{ form.tax_code.errors|striptags }}
+			</div>
+			{% endif %}
+		</div>
+
 
         <div class="mb-3">
             <label for="tech_passports" class="form-label">Техпаспорта (завантажте файли):</label>
