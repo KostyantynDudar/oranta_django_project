@@ -63,6 +63,23 @@ if __name__ == "__main__":
     main()
 
 
+--- FILE: /home/oranta_django_project/oranta_project/telegram_bot.py ---
+import requests
+
+TELEGRAM_BOT_TOKEN = 'your_bot_token'
+TELEGRAM_CHAT_ID = 'your_chat_id'
+
+def send_to_telegram(message):
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    data = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML",
+    }
+    response = requests.post(url, data=data)
+    return response.status_code
+
+
 --- FILE: /home/oranta_django_project/oranta_project/templates/base.html ---
 <!DOCTYPE html>
 <html lang="uk">
@@ -83,7 +100,7 @@ if __name__ == "__main__":
     <nav class="navbar navbar-expand-lg navbar-light bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
-                <img src="{% static 'media/logo.jpg' %}" alt="Oranta Logo" height="40">
+                <img src="{% static 'media/logo.jpeg' %}" alt="Oranta Logo" height="40">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -124,8 +141,7 @@ if __name__ == "__main__":
     <!-- Футер -->
     <footer class="footer mt-5 bg-primary text-white text-center py-3">
         <p>&copy; 2024 Oranta. Всі права захищено.</p>
-        <p>Телефон: <a href="tel:+380986778761" class="text-white">+380 98 677 87 61</a></p>
-        <p>Електронна пошта: <a href="mailto:info@oranta.in.ua" class="text-white">info@oranta.in.ua</a></p>
+        <p>ТВП №333301 Обухівського відділення.</p>
     </footer>
 
     <!-- Підключення Bootstrap JS -->
@@ -135,11 +151,12 @@ if __name__ == "__main__":
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/views.py ---
-from django.shortcuts import render, redirect, get_object_or_404
-from django.core.mail import send_mail
+
+from django.shortcuts import render, redirect
 from django.contrib import messages
-from .models import Article, InsuranceApplication
-from .telegram_bot import send_to_telegram  # Импорт функции для отправки в Telegram
+from .models import InsuranceApplication, UploadedFile
+from .forms import InsuranceApplicationForm
+from .telegram_bot import send_to_telegram
 
 # Файл: /home/oranta_django_project/oranta_project/apps/main/views.py
 
@@ -149,29 +166,22 @@ def home_view(request):
 def contact_view(request):
     return render(request, "main/contacts.html")
 
+
 def submit_insurance_form(request):
     if request.method == 'POST':
-        try:
-            # Извлечение данных из формы
-            phone_number = request.POST.get('phone')
-            tax_code = request.POST.get('tax_code')
-            registration_address = request.POST.get('registration_address')
-            deductible = request.POST.get('deductible')
-            tech_passport = request.FILES.get('tech_passport')
-            personal_docs = request.FILES.get('personal_docs')
+        form = InsuranceApplicationForm(request.POST, request.FILES)
+        if form.is_valid():
+            application = form.save()
 
-            # Создание новой записи в базе данных
-            application = InsuranceApplication(
-                phone_number=phone_number,
-                tax_code=tax_code,
-                registration_address=registration_address,
-                deductible=deductible,
-                tech_passport=tech_passport,
-                personal_docs=personal_docs,
-            )
-            application.save()
+            # Сохраняем техпаспорта
+            for file in request.FILES.getlist('tech_passports'):
+                UploadedFile.objects.create(file=file, application=application)
 
-            # Формирование сообщения для Telegram
+            # Сохраняем личные документы
+            for file in request.FILES.getlist('personal_docs'):
+                UploadedFile.objects.create(file=file, application=application)
+
+            # Уведомление в Telegram
             message = (
                 f"<b>Новая заявка</b>\n\n"
                 f"<b>Код:</b> {application.unique_code}\n"
@@ -179,45 +189,46 @@ def submit_insurance_form(request):
                 f"<b>Адрес:</b> {application.registration_address}\n"
                 f"<b>Франшиза:</b> {application.deductible}"
             )
-
-            # Отправка в Telegram
             send_to_telegram(message)
 
-            # Добавляем сообщение об успешной отправке
-            messages.success(request, "Ваша заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.")
-
-            # Перенаправление после успешного сохранения
+            messages.success(request, "Дякуємо, очікуйте на дзвінок менеджера.")
             return redirect('home')
+        else:
+            messages.error(request, "Помилка!")
+    else:
+        form = InsuranceApplicationForm()
 
-        except Exception as e:
-            # Обработка ошибок
-            messages.error(request, f"Ошибка при обработке заявки: {e}")
-            return render(request, 'main/home.html')
+    return render(request, 'main/home.html', {'form': form})
 
-    return render(request, 'main/home.html')
+
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/admin.py ---
-from django.utils.html import format_html
 from django.contrib import admin
-from .models import InsuranceApplication
+from django.utils.html import format_html, format_html_join
+from .models import InsuranceApplication, UploadedFile
+from django.utils.safestring import mark_safe
+
 
 @admin.register(InsuranceApplication)
 class InsuranceApplicationAdmin(admin.ModelAdmin):
-    list_display = ('unique_code', 'phone_number', 'created_at', 'download_tech_passport', 'download_personal_docs')
-    search_fields = ('unique_code', 'phone_number', 'tax_code', 'registration_address')
+    list_display = ('unique_code', 'phone_number', 'created_at', 'get_files')
+    search_fields = ('unique_code', 'phone_number')
+    list_filter = ('created_at',)
 
-    def download_tech_passport(self, obj):
-        if obj.tech_passport:
-            return format_html('<a href="{}" download>Скачать</a>', obj.tech_passport.url)
-        return "Нет файла"
-    download_tech_passport.short_description = "Техпаспорт"
-
-    def download_personal_docs(self, obj):
-        if obj.personal_docs:
-            return format_html('<a href="{}" download>Скачать</a>', obj.personal_docs.url)
-        return "Нет файла"
-    download_personal_docs.short_description = "Личные документы"
+    def get_files(self, obj):
+        # Получение всех связанных файлов
+        all_files = obj.tech_passports.all() | obj.personal_docs.all()
+        
+        if all_files.exists():
+            # Формируем HTML-ссылки для скачивания
+            return format_html_join(
+                mark_safe('<br>'),  # Разделитель
+                '<a href="{}" target="_blank">Скачать {}</a>',
+                ((file.file.url, file.file.name.split('/')[-1]) for file in all_files)
+            )
+        return format_html('<span style="color: red;">Нет файлов</span>')
+    get_files.short_description = "Скачать файлы"
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/apps.py ---
@@ -268,6 +279,64 @@ class MainPagesTests(TestCase):
         self.assertContains(response, 'Статьи')
 
 
+--- FILE: /home/oranta_django_project/oranta_project/apps/main/forms.py ---
+from django import forms
+from django.core.exceptions import ValidationError
+from .models import InsuranceApplication
+import re
+
+def validate_phone_number(value):
+    if not re.match(r"^\+380\d{9}$", value):
+        raise ValidationError("Номер телефона должен быть в формате +380XXXXXXXXX.")
+
+def validate_tax_code(value):
+    if not re.match(r"^\d{10}$", value):
+        raise ValidationError("Идентификационный номер должен состоять ровно из 10 цифр.")
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class MultipleFileField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            return [single_file_clean(d, initial) for d in data]
+        return single_file_clean(data, initial)
+
+class InsuranceApplicationForm(forms.ModelForm):
+    tech_passports = MultipleFileField(label='Техпаспорта', required=False)
+    personal_docs = MultipleFileField(label='Личные документы', required=False)
+    phone_number = forms.CharField(
+        label="Телефон",
+        max_length=13,
+        validators=[validate_phone_number],
+        help_text="Введите номер в формате +380XXXXXXXXX."
+    )
+    tax_code = forms.CharField(
+        label="Идентификационный номер",
+        max_length=10,
+        validators=[validate_tax_code],
+        help_text="Введите идентификационный номер (10 цифр)."
+    )
+    deductible = forms.ChoiceField(
+        choices=[
+            ('23-76', 'Вік: 23-76'),
+            ('30-76', 'Вік: 30-76'),
+            ('no_age', 'Без віку'),
+        ],
+        label="Вік",
+        required=True
+    )
+
+    class Meta:
+        model = InsuranceApplication
+        fields = ['phone_number', 'tax_code', 'registration_address', 'deductible']
+
+
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/telegram_bot.py ---
 import requests
 from django.conf import settings
@@ -291,18 +360,16 @@ def send_to_telegram(message):
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/models.py ---
-# Файл: /home/oranta_django_project/oranta_project/apps/main/models.py
-
 from django.db import models
-from django.utils.timezone import now
-from uuid import uuid4
 import os
-
+from uuid import uuid4
+from datetime import datetime
 
 def rename_file(instance, filename):
     ext = filename.split('.')[-1]
-    filename = f"{instance.unique_code}_Техпаспорт.{ext}"
-    return os.path.join('tech_passports/', filename)
+    identifier = instance.application.unique_code if hasattr(instance, 'application') else uuid4().hex[:6]
+    filename = f"{identifier}_{uuid4().hex[:6]}.{ext}"
+    return os.path.join('uploaded_files/', filename)
 
 
 def rename_personal_docs(instance, filename):
@@ -311,46 +378,47 @@ def rename_personal_docs(instance, filename):
     return os.path.join('personal_docs/', filename)
 
 
-class Article(models.Model):
-    title = models.CharField(max_length=255)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
+def generate_unique_code():
+    return datetime.now().strftime('%Y%m%d%H%M%S') + str(uuid4().hex[:6])
+
+class UploadedFile(models.Model):
+    application = models.ForeignKey(
+        'InsuranceApplication', 
+        on_delete=models.CASCADE, 
+        related_name="uploaded_files", 
+        null=True, 
+        blank=True, 
+        verbose_name="Заявка"
+    )
+    file = models.FileField(upload_to=rename_file, verbose_name="Файл")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title
+        return f"{self.file.name} (Заявка: {self.application.unique_code if self.application else 'Нет заявки'})"
 
-def generate_unique_code():
-    from datetime import datetime
-    from uuid import uuid4
-    return datetime.now().strftime('%Y%m%d%H%M%S') + str(uuid4().hex)[:6]
+
 
 class InsuranceApplication(models.Model):
-    unique_code = models.CharField(
-        max_length=20,
-        unique=True,
-        verbose_name="Уникальный код заявки",
-        default=generate_unique_code  # Указываем функцию вместо lambda
-    )
+    unique_code = models.CharField(max_length=20, unique=True, default=generate_unique_code, verbose_name="Уникальный код заявки")
     phone_number = models.CharField(max_length=15, verbose_name="Номер телефона")
     tax_code = models.CharField(max_length=10, verbose_name="Налоговый код")
-    tech_passport = models.FileField(upload_to=rename_file, verbose_name="Техпаспорт")
-    personal_docs = models.FileField(upload_to=rename_personal_docs, verbose_name="Личные документы")
+    tech_passports = models.ManyToManyField(UploadedFile, related_name="tech_passport_applications", verbose_name="Техпаспорта")
+    personal_docs = models.ManyToManyField(UploadedFile, related_name="personal_docs_applications", verbose_name="Личные документы")
     registration_address = models.TextField(verbose_name="Адрес регистрации")
     deductible = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=[
-            ('0', '0 грн'),
-            ('1500', '1500 грн'),
-            ('2500', '2500 грн')
+            ('23-76', 'Вік: 23-76'),
+            ('30-76', 'Вік: 30-76'),
+            ('no_age', 'Без віку'),
         ],
-        verbose_name="Франшиза"
+        verbose_name="Вік"
     )
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата подачи заявки")
 
-    def save(self, *args, **kwargs):
-        if not self.unique_code:
-            self.unique_code = generate_unique_code()
-        super().save(*args, **kwargs)
+    def __str__(self):
+        return f"Заявка {self.unique_code} от {self.phone_number}"
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/templates/main/article_detail.html ---
@@ -378,33 +446,77 @@ class InsuranceApplication(models.Model):
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/home.css' %}">
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const scrollToFormButton = document.getElementById("scroll-to-form");
+        if (scrollToFormButton) {
+            scrollToFormButton.addEventListener("click", function(e) {
+                e.preventDefault();
+                const formElement = document.getElementById("form-section");
+                if (formElement) {
+                    formElement.scrollIntoView({ behavior: "smooth" });
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-5">
     <h1 class="text-center mb-4">Оформити заявку на страхування</h1>
     
-    <form method="post" action="{% url 'submit_insurance_form' %}" enctype="multipart/form-data">
+    <form id="form-section" method="post" action="{% url 'submit_insurance_form' %}" enctype="multipart/form-data">
         {% csrf_token %}
         
+	<div class="mb-3">
+		<label for="phone_number" class="form-label">Телефон:</label>
+		<input 
+			type="tel" 
+			class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}" 
+			id="phone_number" 
+			name="phone_number" 
+			pattern="\+380\d{9}" 
+			placeholder="+380XXXXXXXXX" 
+			required
+		>
+		<div class="form-text">Введите номер в формате <b>+380XXXXXXXXX</b>.</div>
+		{% if form.phone_number.errors %}
+		<div class="invalid-feedback">
+			{{ form.phone_number.errors|striptags }}
+		</div>
+		{% endif %}
+	</div>
+
+
+		<div class="mb-3">
+			<label for="tax_code" class="form-label">Реєстраційний номер облікової картки платника податків:</label>
+			<input 
+				type="text" 
+				class="form-control {% if form.tax_code.errors %}is-invalid{% endif %}" 
+				id="tax_code" 
+				name="tax_code" 
+				pattern="\d{10}" 
+				placeholder="XXXXXXXXXX" 
+				required
+			>
+			<div class="form-text">Введіть ідентифікаційний номер (10 цифр).</div>
+			{% if form.tax_code.errors %}
+			<div class="invalid-feedback">
+				{{ form.tax_code.errors|striptags }}
+			</div>
+			{% endif %}
+		</div>
+
+
         <div class="mb-3">
-            <label for="phone" class="form-label">Телефон:</label>
-            <input type="tel" class="form-control" id="phone" name="phone" pattern="\+380\d{9}" placeholder="+380XXXXXXXXX" required>
+            <label for="tech_passports" class="form-label">Техпаспорта (завантажте файли):</label>
+            <input type="file" class="form-control" id="tech_passports" name="tech_passports" multiple>
         </div>
 
         <div class="mb-3">
-            <label for="tax_code" class="form-label">Ідентифікаційний код:</label>
-            <input type="text" class="form-control" id="tax_code" name="tax_code" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="tech_passport" class="form-label">Техпаспорт (завантажте файл):</label>
-            <input type="file" class="form-control" id="tech_passport" name="tech_passport" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="personal_docs" class="form-label">Особисті документи (завантажте файл):</label>
-            <input type="file" class="form-control" id="personal_docs" name="personal_docs" required>
+            <label for="personal_docs" class="form-label">Особисті документи (завантажте файли):</label>
+            <input type="file" class="form-control" id="personal_docs" name="personal_docs" multiple>
         </div>
 
         <div class="mb-3">
@@ -424,9 +536,35 @@ class InsuranceApplication(models.Model):
         
         <button type="submit" class="btn btn-primary w-100">Відправити заявку</button>
     </form>
+
+    <section class="additional-info mt-5">
+        <h2>Чому обирають нас</h2>
+        <p>Ми пропонуємо зручний та швидкий сервіс для оформлення страховки онлайн. Наші клієнти отримують:</p>
+        <ul>
+            <li>Швидке обслуговування без зайвих черг;</li>
+            <li>Професійну консультацію та підтримку;</li>
+            <li>Прозорі умови страхування.</li>
+        </ul>
+    </section>
+
+    <section class="advantages mt-5">
+        <h2>Наші переваги</h2>
+        <p>Ми є офіційним ТВП №333301 Обухівського відділення, що гарантує якість та надійність наших послуг.</p>
+        <ul>
+            <li>Доступні ціни на всі види страхування;</li>
+            <li>Оформлення полісів онлайн, не виходячи з дому;</li>
+            <li>Цілодобова підтримка клієнтів.</li>
+        </ul>
+    </section>
+
+    <section class="cta mt-5 text-center">
+        <h2>Оформіть страховку прямо зараз</h2>
+        <p>Заповніть форму заявки на сайті, і наш страховий агент зв'яжеться з вами, щоб надати вигідну пропозицію.</p>
+        <p class="text-danger"><strong>Акція!</strong> При оформленні автоцивілки до <strong>4 травня 2025 року</strong> ви отримаєте додатково <strong>Автопарасольку</strong>.</p>
+        <a href="#" class="btn btn-success" id="scroll-to-form">Оформити заявку</a>
+    </section>
 </div>
 {% endblock %}
-
 
 
 --- FILE: /home/oranta_django_project/oranta_project/apps/main/templates/main/articles.html ---
@@ -471,6 +609,7 @@ class InsuranceApplication(models.Model):
     <div class="card-body">
         <h5 class="card-title">Наша нова адреса:</h5>
         <p class="card-text"><strong>Кагарлик, вул. Незалежності, 24</strong></p>
+        <p class="card-text text-muted">ТВП №333301 Обухівського відділення.</p>
         <h5 class="card-title mt-4">Контактні дані:</h5>
         <p class="card-text">Телефон, Viber, Telegram: <a href="tel:+380986778761">+380 98 677 87 61</a> (Роман Станіславович)</p>
         <p class="card-text">Електронна пошта: <a href="mailto:info@oranta.in.ua">info@oranta.in.ua</a></p>
@@ -574,14 +713,23 @@ def news_detail(request, id):
 
 
 --- FILE: /home/oranta_django_project/oranta_project/news/admin.py ---
-
 from django.contrib import admin
-from .models import News
+from .models import News, Category
+
 
 @admin.register(News)
 class NewsAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_at')
-    search_fields = ('title', 'content')
+    search_fields = ('title', 'summary', 'content')
+    list_filter = ('created_at',)
+    fields = ('title', 'summary', 'content', 'image')
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
+    search_fields = ('name',)
+    list_filter = ('created_at',)
 
 
 --- FILE: /home/oranta_django_project/oranta_project/news/apps.py ---
@@ -615,8 +763,10 @@ from django.test import TestCase
 --- FILE: /home/oranta_django_project/oranta_project/news/models.py ---
 from django.db import models
 
+
 class News(models.Model):
     title = models.CharField(max_length=200, verbose_name="Заголовок")
+    summary = models.TextField(verbose_name="Кратке опис", null=True, blank=True)  # Поле добавлено
     content = models.TextField(verbose_name="Контент")
     image = models.ImageField(upload_to="news_images/", null=True, blank=True, verbose_name="Изображение")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
@@ -629,6 +779,19 @@ class News(models.Model):
         return self.title
 
 
+# Добавим, например, еще один вспомогательный класс для категорий (если это нужно):
+class Category(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Назва категорії")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+
+    class Meta:
+        verbose_name = "Категорія"
+        verbose_name_plural = "Категорії"
+
+    def __str__(self):
+        return self.name
+
+
 --- FILE: /home/oranta_django_project/oranta_project/news/templates/news/news_list.html ---
 {% extends 'base.html' %}
 {% load static %}
@@ -637,22 +800,46 @@ class News(models.Model):
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/news.css' %}">
+<style>
+    .news-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        padding: 20px;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .news-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .news-card img {
+        max-height: 150px;
+        width: auto;
+        margin-right: 15px;
+        border-radius: 8px;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <h1 class="text-center mb-4">Новини</h1>
 
-<div class="list-group">
+<div class="row">
     {% for article in articles %}
-    <a href="{% url 'news_detail' article.id %}" class="list-group-item list-group-item-action">
-        <div class="d-flex w-100 justify-content-between">
-            <h5 class="mb-1">{{ article.title }}</h5>
-            <small>{{ article.created_at|date:"d.m.Y" }}</small>
+    <div class="col-md-4">
+        <div class="news-card">
+            {% if article.image %}
+            <img src="{{ article.image.url }}" alt="{{ article.title }}" class="img-fluid">
+            {% endif %}
+            <h5 class="mt-3">
+                <a href="{% url 'news_detail' article.id %}" class="text-dark text-decoration-none">{{ article.title }}</a>
+            </h5>
+            {% if article.summary %}
+            <p class="text-muted mb-2">{{ article.summary }}</p>
+            {% endif %}
+            <p class="text-muted"><small>Дата публікації: {{ article.created_at|date:"d.m.Y" }}</small></p>
         </div>
-        {% if article.summary %}
-        <p class="mb-1">{{ article.summary }}</p>
-        {% endif %}
-    </a>
+    </div>
     {% empty %}
     <p>Новин поки що немає.</p>
     {% endfor %}
@@ -668,6 +855,18 @@ class News(models.Model):
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/news.css' %}">
+<style>
+    .news-detail img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .news-detail .content {
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -680,15 +879,27 @@ class News(models.Model):
     </div>
     {% endif %}
 
-    <p class="text-muted">{{ article.created_at|date:"d.m.Y H:i" }}</p>
+    <p class="text-muted">Дата публікації: {{ article.created_at|date:"d.m.Y H:i" }}</p>
     <div class="content">
         {{ article.content|safe }}
     </div>
 
-    <a href="{% url 'news_list' %}" class="btn btn-primary mt-4">Повернутися до новин</a>
+    <div class="text-center mt-4">
+        <a href="{% url 'news_list' %}" class="btn btn-primary">Повернутися до новин</a>
+        <button class="btn btn-outline-primary" onclick="shareNews()">Поділитися</button>
+    </div>
 </div>
+
+<script>
+function shareNews() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        alert('Посилання скопійовано в буфер обміну!');
+    });
+}
+</script>
 {% endblock %}
- 
+
 
 --- FILE: /home/oranta_django_project/oranta_project/oranta_project/urls.py ---
 from django.contrib import admin
@@ -748,8 +959,12 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
 import os
 from decouple import config
+
+# Загрузить переменные из .env
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

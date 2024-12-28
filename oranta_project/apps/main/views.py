@@ -38,10 +38,10 @@ def submit_insurance_form(request):
             )
             send_to_telegram(message)
 
-            messages.success(request, "Ваша заявка успешно отправлена!")
+            messages.success(request, "Дякуємо, очікуйте на дзвінок менеджера.")
             return redirect('home')
         else:
-            messages.error(request, "Ошибка при отправке заявки!")
+            messages.error(request, "Помилка!")
     else:
         form = InsuranceApplicationForm()
 

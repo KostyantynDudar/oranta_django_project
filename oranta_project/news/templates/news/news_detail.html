@@ -5,6 +5,18 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/news.css' %}">
+<style>
+    .news-detail img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .news-detail .content {
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -17,12 +29,23 @@
     </div>
     {% endif %}
 
-    <p class="text-muted">{{ article.created_at|date:"d.m.Y H:i" }}</p>
+    <p class="text-muted">Дата публікації: {{ article.created_at|date:"d.m.Y H:i" }}</p>
     <div class="content">
         {{ article.content|safe }}
     </div>
 
-    <a href="{% url 'news_list' %}" class="btn btn-primary mt-4">Повернутися до новин</a>
+    <div class="text-center mt-4">
+        <a href="{% url 'news_list' %}" class="btn btn-primary">Повернутися до новин</a>
+        <button class="btn btn-outline-primary" onclick="shareNews()">Поділитися</button>
+    </div>
 </div>
+
+<script>
+function shareNews() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        alert('Посилання скопійовано в буфер обміну!');
+    });
+}
+</script>
 {% endblock %}
- 
