@@ -44,10 +44,15 @@ class InsuranceApplication(models.Model):
     personal_docs = models.ManyToManyField(UploadedFile, related_name="personal_docs_applications", verbose_name="Личные документы")
     registration_address = models.TextField(verbose_name="Адрес регистрации")
     deductible = models.CharField(
-        max_length=10,
-        choices=[('0', '0 грн'), ('1500', '1500 грн'), ('2500', '2500 грн')],
-        verbose_name="Франшиза"
+        max_length=20,
+        choices=[
+            ('23-76', 'Вік: 23-76'),
+            ('30-76', 'Вік: 30-76'),
+            ('no_age', 'Без віку'),
+        ],
+        verbose_name="Вік"
     )
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата подачи заявки")
 
     def __str__(self):

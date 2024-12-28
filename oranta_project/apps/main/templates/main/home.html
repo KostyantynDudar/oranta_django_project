@@ -5,13 +5,27 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/home.css' %}">
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const scrollToFormButton = document.getElementById("scroll-to-form");
+        if (scrollToFormButton) {
+            scrollToFormButton.addEventListener("click", function(e) {
+                e.preventDefault();
+                const formElement = document.getElementById("form-section");
+                if (formElement) {
+                    formElement.scrollIntoView({ behavior: "smooth" });
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-5">
     <h1 class="text-center mb-4">Оформити заявку на страхування</h1>
     
-    <form method="post" action="{% url 'submit_insurance_form' %}" enctype="multipart/form-data">
+    <form id="form-section" method="post" action="{% url 'submit_insurance_form' %}" enctype="multipart/form-data">
         {% csrf_token %}
         
 	<div class="mb-3">
@@ -55,12 +69,12 @@
 
 
         <div class="mb-3">
-            <label for="tech_passports" class="form-label">Техпаспорта (завантажте файли):</label>
+            <label for="tech_passports" class="form-label">Свідоцтво про реєстрацію транспортного засобу (завантажте файли):</label>
             <input type="file" class="form-control" id="tech_passports" name="tech_passports" multiple>
         </div>
 
         <div class="mb-3">
-            <label for="personal_docs" class="form-label">Особисті документи (завантажте файли):</label>
+            <label for="personal_docs" class="form-label">Особисті документи, паспорт чи права (завантажте файли):</label>
             <input type="file" class="form-control" id="personal_docs" name="personal_docs" multiple>
         </div>
 
@@ -69,17 +83,45 @@
             <textarea class="form-control" id="registration_address" name="registration_address" rows="3" required></textarea>
         </div>
 
-        <div class="mb-3">
-            <label for="deductible" class="form-label">Вибір франшизи:</label>
-            <select class="form-select" id="deductible" name="deductible" required>
-                <option value="" disabled selected>Оберіть франшизу</option>
-                <option value="0">0 грн</option>
-                <option value="1500">1500 грн</option>
-                <option value="2500">2500 грн</option>
-            </select>
-        </div>
+	<div class="mb-3">
+    	<label for="deductible" class="form-label">Вибір віку:</label>
+    	<select class="form-select" id="deductible" name="deductible" required>
+     	   <option value="" disabled selected>Оберіть вік</option>
+     	   <option value="23-76">Вік: 23-76</option>
+     	   <option value="30-76">Вік: 30-76</option>
+     	   <option value="no_age">Без віку</option>
+   	 </select>
+	</div>
+
         
         <button type="submit" class="btn btn-primary w-100">Відправити заявку</button>
     </form>
+
+    <section class="additional-info mt-5">
+        <h2>Чому обирають нас</h2>
+        <p>Ми пропонуємо зручний та швидкий сервіс для оформлення страховки онлайн. Наші клієнти отримують:</p>
+        <ul>
+            <li>Швидке обслуговування без зайвих черг;</li>
+            <li>Професійну консультацію та підтримку;</li>
+            <li>Прозорі умови страхування.</li>
+        </ul>
+    </section>
+
+    <section class="advantages mt-5">
+        <h2>Наші переваги</h2>
+        <p>Ми є офіційним ТВП №333301 Обухівського відділення, що гарантує якість та надійність наших послуг.</p>
+        <ul>
+            <li>Доступні ціни на всі види страхування;</li>
+            <li>Оформлення полісів онлайн, не виходячи з дому;</li>
+            <li>Цілодобова підтримка клієнтів.</li>
+        </ul>
+    </section>
+
+    <section class="cta mt-5 text-center">
+        <h2>Оформіть страховку прямо зараз</h2>
+        <p>Заповніть форму заявки на сайті, і наш страховий агент зв'яжеться з вами, щоб надати вигідну пропозицію.</p>
+        <p class="text-danger"><strong>Акція!</strong> При оформленні автоцивілки до <strong>4 травня 2025 року</strong> ви отримаєте додатково <strong>Автопарасольку</strong>.</p>
+        <a href="#" class="btn btn-success" id="scroll-to-form">Оформити заявку</a>
+    </section>
 </div>
 {% endblock %}

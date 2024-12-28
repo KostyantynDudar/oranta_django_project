@@ -40,6 +40,15 @@ class InsuranceApplicationForm(forms.ModelForm):
         validators=[validate_tax_code],
         help_text="Введите идентификационный номер (10 цифр)."
     )
+    deductible = forms.ChoiceField(
+        choices=[
+            ('23-76', 'Вік: 23-76'),
+            ('30-76', 'Вік: 30-76'),
+            ('no_age', 'Без віку'),
+        ],
+        label="Вік",
+        required=True
+    )
 
     class Meta:
         model = InsuranceApplication
