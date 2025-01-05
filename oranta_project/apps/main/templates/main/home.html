@@ -38,8 +38,9 @@
 			pattern="\+380\d{9}" 
 			placeholder="+380XXXXXXXXX" 
 			required
+                        value="+380"
 		>
-		<div class="form-text">Введите номер в формате <b>+380XXXXXXXXX</b>.</div>
+		<div class="form-text">Введіть номер в форматі <b>+380XXXXXXXXX</b>.</div>
 		{% if form.phone_number.errors %}
 		<div class="invalid-feedback">
 			{{ form.phone_number.errors|striptags }}
@@ -109,7 +110,7 @@
 
     <section class="advantages mt-5">
         <h2>Наші переваги</h2>
-        <p>Ми є офіційним ТВП №333301 Обухівського відділення, що гарантує якість та надійність наших послуг.</p>
+        <p>Ми є офіційною Точкою продажу №333301 Обухівського відділення НАСК "ОРАНТА", що гарантує якість та надійність наших послуг.</p>
         <ul>
             <li>Доступні ціни на всі види страхування;</li>
             <li>Оформлення полісів онлайн, не виходячи з дому;</li>
@@ -120,8 +121,12 @@
     <section class="cta mt-5 text-center">
         <h2>Оформіть страховку прямо зараз</h2>
         <p>Заповніть форму заявки на сайті, і наш страховий агент зв'яжеться з вами, щоб надати вигідну пропозицію.</p>
-        <p class="text-danger"><strong>Акція!</strong> При оформленні автоцивілки до <strong>4 травня 2025 року</strong> ви отримаєте додатково <strong>Автопарасольку</strong>.</p>
+
         <a href="#" class="btn btn-success" id="scroll-to-form">Оформити заявку</a>
     </section>
+    <!-- Скрытый текст для SEO -->
+    <div class="hidden-content">
+        {% include 'main/seo_content.html' %}
+    </div>
 </div>
 {% endblock %}

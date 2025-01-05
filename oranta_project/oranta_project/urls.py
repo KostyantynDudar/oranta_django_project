@@ -18,3 +18,16 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+from django.contrib.sitemaps.views import sitemap
+from django.contrib.sitemaps import GenericSitemap
+from news.models import News
+
+info_dict = {
+    'queryset': News.objects.all(),
+    'date_field': 'created_at',
+}
+
+urlpatterns += [
+    path('sitemap.xml', sitemap, {'sitemaps': {'news': GenericSitemap(info_dict)}}, name='django.contrib.sitemaps.views.sitemap'),
+]

@@ -4,6 +4,12 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Онлайн-страхування з компанією 'ОРАНТА'. Швидке оформлення страховок: авто, майно, медичне. Надійна підтримка клієнтів.">
+    <meta name="keywords" content="страхування, онлайн страховка, автострахування, медичне страхування, страхування майна, ОРАНТА">
+    <meta name="robots" content="index, follow">
+
+
+
     <title>{% block title %}Oranta{% endblock %}</title>
 
     <!-- Підключення Bootstrap -->
@@ -16,9 +22,7 @@
     <!-- Навігаційна панель -->
     <nav class="navbar navbar-expand-lg navbar-light bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <img src="{% static 'media/logo.jpeg' %}" alt="Oranta Logo" height="40">
-            </a>
+
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -58,10 +62,27 @@
     <!-- Футер -->
     <footer class="footer mt-5 bg-primary text-white text-center py-3">
         <p>&copy; 2024 Oranta. Всі права захищено.</p>
-        <p>ТВП №333301 Обухівського відділення.</p>
+        <p>Точка продажу №333301 Обухівського відділення НАСК "ОРАНТА".</p>
     </footer>
 
     <!-- Підключення Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "ОРАНТА",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "вул. Незалежності, 24",
+    "addressLocality": "Кагарлик",
+    "addressCountry": "UA"
+  },
+  "telephone": "+380986778761",
+  "email": "info@oranta.in.ua"
+}
+</script>
+
 </body>
 </html>

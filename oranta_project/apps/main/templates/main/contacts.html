@@ -5,28 +5,84 @@
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/contacts.css' %}">
+<style>
+    .contacts-section {
+        margin: 20px auto;
+        max-width: 800px;
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .contacts-block {
+        margin-bottom: 20px;
+        padding: 20px;
+        background-color: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    .contacts-block h5 {
+        margin-bottom: 15px;
+        color: #0056b3;
+    }
+    .contacts-block p {
+        margin: 5px 0;
+        line-height: 1.6;
+    }
+    .schedule ul {
+        padding-left: 20px;
+        margin: 10px 0;
+    }
+    .schedule ul li {
+        margin: 5px 0;
+    }
+    .highlight {
+        color: #d9534f;
+        font-weight: bold;
+    }
+    .cta {
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #eaf4fc;
+        border: 1px solid #cce7f9;
+        border-radius: 8px;
+    }
+    .cta p {
+        font-size: 1.2em;
+        color: #333;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<h1 class="text-center mb-4">Контакти</h1>
+<div class="contacts-section">
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Наша нова адреса:</h5>
-        <p class="card-text"><strong>Кагарлик, вул. Незалежності, 24</strong></p>
-        <p class="card-text text-muted">ТВП №333301 Обухівського відділення.</p>
-        <h5 class="card-title mt-4">Контактні дані:</h5>
-        <p class="card-text">Телефон, Viber, Telegram: <a href="tel:+380986778761">+380 98 677 87 61</a> (Роман Станіславович)</p>
-        <p class="card-text">Електронна пошта: <a href="mailto:info@oranta.in.ua">info@oranta.in.ua</a></p>
+    <div class="contacts-block">
+        <h5>Наша адреса:</h5>
+        <p><strong>Кагарлик, вул. Незалежності, 24</strong></p>
+        <p class="text-muted">Точка продажу №333301 Обухівського відділення НАСК "ОРАНТА".</p>
     </div>
-</div>
 
-<div class="card">
-    <div class="card-body">
-        <h5 class="card-title">Графік роботи:</h5>
-        <p class="card-text">Понеділок – п’ятниця: <strong>9:00 – 16:45</strong></p>
-        <p class="card-text">Вихідні: <strong>9:00 – 11:45</strong></p>
+    <div class="contacts-block">
+        <h5>Контактні дані:</h5>
+        <p>Телефон, Viber, Telegram: <a href="tel:+380986778761">+380 98 677 87 61</a> (Роман Станіславович)</p>
+        <p>Електронна пошта: <a href="mailto:info@oranta.in.ua">info@oranta.in.ua</a></p>
     </div>
-</div>
 
+    <div class="contacts-block schedule">
+        <h5>Графік роботи відділення:</h5>
+        <ul>
+            <li>Понеділок – п’ятниця: <span class="highlight">9:00 – 16:45</span></li>
+            <li>Вихідні: <span class="highlight">9:00 – 11:45</span></li>
+        </ul>
+    </div>
+
+    <div class="cta">
+        <p>Заявки оформляються <span class="highlight">24/7</span> через сайт.</p>
+        <p>Також ви можете оформити заявку через наш Telegram-бот: <a href="https://t.me/orantakgbot" target="_blank">https://t.me/orantakgbot</a></p>
+    </div>
+
+</div>
 {% endblock %}

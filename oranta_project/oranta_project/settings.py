@@ -156,3 +156,12 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 
+# Email settings for SendGrid
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apikey'  # Это фиксированное значение для SendGrid
+EMAIL_HOST_PASSWORD = config('SENDGRID_API_KEY')  # Получено из переменных .env
+DEFAULT_FROM_EMAIL = 'info@oranta.in.ua'
+

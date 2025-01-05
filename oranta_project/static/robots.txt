@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://oranta.in.ua/sitemap.xml

@@ -1,6 +1,21 @@
 /* Файл: home.css */
 /* Расположение: /home/oranta_django_project/static/css/home.css */
 
+
+
+/* Стили для скрытого контента */
+.hidden-content {
+    display: none;
+    visibility: hidden;
+}
+
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #ffffff;
+    --accent-color: #0056b3;
+}
+
+/* Остальные стили страницы */
 h1 {
     color: var(--primary-color);
     text-align: center;
